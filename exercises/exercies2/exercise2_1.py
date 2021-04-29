@@ -1,5 +1,6 @@
 import numpy as np  # linear algebra
 from sklearn import datasets
+from sklearn.metrics import confusion_matrix
 
 iris = datasets.load_iris()
 from sklearn.model_selection import train_test_split
@@ -9,7 +10,7 @@ import matplotlib.pyplot as plt
 
 X = iris.data[:, :2]  # sepal width and sepal length
 y = iris.target
-steps = .01  # Spacing between values
+steps = .002  # Spacing between values
 i = [1, 3, 15]
 split = [0.3, 0.1]
 
@@ -18,7 +19,7 @@ backround = ListedColormap(['#FFAAAA', '#AAFFAA', '#00AAFF'])
 training_points = ListedColormap(['#a30b0b', '#089e08', '#006ea6'])
 
 for r in split:
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r, random_state=40)
     for x in i:
         neigh = KNeighborsClassifier(n_neighbors=x, weights='distance')
         neigh.fit(X_train, y_train)
@@ -39,5 +40,6 @@ for r in split:
         plt.scatter(X[:, 0], X[:, 1], c=y, cmap=training_points)
         plt.xlim(xx.min(), xx.max())
         plt.ylim(yy.min(), yy.max())
-        plt.title(f"3-Class classification (k = {x}), split = {r}")
+        print(confusion_matrix(y_test, neigh.fit(X_train, y_train).predict(X_test)))
+        plt.title(f"3-Class classification (k = {x}), split = {r}, accuracy: {round(neigh.score(X_test, y_test)*100, 2)} %")
         plt.show()
