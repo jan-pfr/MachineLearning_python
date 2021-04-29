@@ -37,7 +37,7 @@ for r in split:
         plt.pcolormesh(xx, yy, pred, cmap=backround, shading='auto')
 
         # Plot also the training points
-        plt.scatter(X[:, 0], X[:, 1], c=y, cmap=training_points)
+        plt.scatter(X_test[:, 0], X_test[:, 1], c=y_test, cmap=training_points)
         plt.xlim(xx.min(), xx.max())
         plt.ylim(yy.min(), yy.max())
         print(confusion_matrix(y_test, neigh.fit(X_train, y_train).predict(X_test)))

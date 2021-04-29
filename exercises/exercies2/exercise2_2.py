@@ -1,70 +1,64 @@
 import numpy as np
+from matplotlib import pyplot as plt
+from matplotlib.colors import ListedColormap
+from sklearn.model_selection import train_test_split
 from sklearn import datasets
+from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+
 iris = datasets.load_iris()
+x = iris.data[:, :2]  # sepal width and sepal length
+y = iris.target  # classes
+
+backround = ListedColormap(['#FFAAAA', '#AAFFAA', '#00AAFF'])
+training_points = ListedColormap(['#a30b0b', '#089e08', '#006ea6'])
+
+test_size = 0.1  # (90-10)
+neurons = [1, 3, 5] # numbers of neutrons in the hidden layer
+
+random_state = 40
+# solver
+solver = "adam" # standard is adam, but that is only for big datasets
+steps= 0.002
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=test_size, random_state=random_state)
+
+# normalize the data
+scaler = StandardScaler()
+temp = scaler.fit(x_train)
+x_train = scaler.transform(x_train)
+x_test = scaler.transform(x_test)
+
+interations = 10000
+
+learning_rate = 0.1
+
+for f in neurons:
+    classifier = MLPClassifier(solver=solver,
+    max_iter=interations, hidden_layer_sizes=f,
+    learning_rate_init=learning_rate,
+    random_state=random_state).fit(x_train, y_train)
+
+    print(f"Classifier predict: {classifier.predict(x_test)}")
+    print(f"neurones: {f}, Accuracy:{round(classifier.score(x_test, y_test) * 100,2)} %")
+
+    # calculate min, max and limits
+    x_min, x_max = x_test[:, 0].min() - 1, x_test[:, 0].max() + 1
+    y_min, y_max = x_test[:, 1].min() - 1, x_test[:, 1].max() + 1
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, steps),
+				np.arange(y_min, y_max, steps))
 
 
-# define the sigmoid function
-def sigmoid(x, derivative=False):
-    if (derivative == True):
-        return sigmoid(x, derivative=False) * (1 - sigmoid(x, derivative=False))
-    else:
-        return 1 / (1 + np.exp(-x))
+    # Put the result into a color plot
+    pred = classifier.predict(np.c_[xx.ravel(), yy.ravel()])
+    pred = pred.reshape(xx.shape)
+    plt.figure()
+    plt.pcolormesh(xx, yy, pred, cmap=backround, shading='auto')
 
+    # Plot also the training points
+    plt.scatter(x_test[:, 0], x_test[:, 1], c=y_test,
+    cmap=training_points)
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
 
-# choose a random seed for reproducible results
-np.random.seed(1)
-
-# learning rate
-alpha = .1
-
-# number of nodes in the hidden layer
-num_hidden = 10
-
-# inputs
-X = iris.data[:, :2]  # 4 attributes are available, only the first two are used.
-print(X)
-# outputs
-# x.T is the transpose of x, making this a column vector
-y = iris.target
-np.transpose(y)
-print(y)
-# X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=r)
-
-# initialize weights randomly with mean 0 and range [-1, 1]
-# the +1 in the 1st dimension of the weight matrices is for the bias weight
-hidden_weights = 2 * np.random.random((X.shape[1] + 1, num_hidden)) - 1
-output_weights = 2 * np.random.random((num_hidden + 1, y.shape[0])) - 1
-
-# number of iterations of gradient descent
-num_iterations = 10000
-
-# for each iteration of gradient descent
-for i in range(num_iterations):
-    # forward phase
-    # np.hstack((np.ones(...), X) adds a fixed input of 1 for the bias weight
-    input_layer_outputs = np.hstack((np.ones((X.shape[0], 1)), X))
-    hidden_layer_outputs = np.hstack((np.ones((X.shape[0], 1)), sigmoid(np.dot(input_layer_outputs, hidden_weights))))
-    output_layer_outputs = np.dot(hidden_layer_outputs, output_weights)
-
-    # backward phase
-    # output layer error term
-    output_error = output_layer_outputs - y
-    # hidden layer error term
-    # [:, 1:] removes the bias term from the backpropagation
-    hidden_error = hidden_layer_outputs[:, 1:] * (1 - hidden_layer_outputs[:, 1:]) * np.dot(output_error,
-                                                                                            output_weights.T[:, 1:])
-
-    # partial derivatives
-    hidden_pd = input_layer_outputs[:, :, np.newaxis] * hidden_error[:, np.newaxis, :]
-    output_pd = hidden_layer_outputs[:, :, np.newaxis] * output_error[:, np.newaxis, :]
-
-    # average for total gradients
-    total_hidden_gradient = np.average(hidden_pd, axis=0)
-    total_output_gradient = np.average(output_pd, axis=0)
-
-    # update weights
-    hidden_weights += - alpha * total_hidden_gradient
-    output_weights += - alpha * total_output_gradient
-
-# print the final outputs of the neural network on the inputs X
-print("Output After Training: \n{}".format(output_layer_outputs))
+    plt.title(f" MLP 3-Class classification, normalized (n ={f}), acc: {round(classifier.score(x_test, y_test) * 100, 2)} %, solver: {solver}")
+    plt.show()
